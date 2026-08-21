@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ledger — Daily Timetable</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6B4226">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600;1,9..144,700&family=Poppins:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#3B2A22;
+    --paper:#F5EAE4;
+    --paper-2:#EDD9D0;
+    --line:#DCC3B4;
+    --pink:#E0356B;
+    --pink-deep:#B81856;
+    --pink-pale:#F6D9E3;
+    --brown:#6B4226;
+    --brown-deep:#4A2C18;
+    --gray:#8C8078;
+    --done-glow: rgba(224,53,107,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: linear-gradient(var(--paper-2) 1px, transparent 1px);
+    background-size: 100% 2.6em;
+    color:var(--ink);
+    font-family:'Poppins', sans-serif;
+    min-height:100vh;
+    padding:28px 16px 60px;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:3px solid var(--brown);
+    padding-bottom:14px;
+    margin-bottom:6px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:700;
+    font-size:34px;
+    margin:0;
+    letter-spacing:-0.01em;
+    line-height:1;
+    color:var(--pink-deep);
+  }
+  .date-line{
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--brown);
+    font-weight:600;
+    margin-top:6px;
+  }
+  .daypick{
+    display:flex;
+    gap:4px;
+    font-size:10px;
+  }
+  .daypick button{
+    background:var(--paper);
+    border:1.5px solid var(--brown);
+    color:var(--brown-deep);
+    padding:6px 8px;
+    font-family:'Poppins', sans-serif;
+    font-weight:600;
+    font-size:10px;
+    cursor:pointer;
+    border-radius:20px;
+  }
+  .daypick button.active{
+    background:var(--pink);
+    color:#fff;
+    border-color:var(--pink);
+  }
+  .daypick button.today-marker::after{
+    content:'✦';
+    color:var(--pink);
+    margin-left:3px;
+  }
+  .daypick button.active.today-marker::after{ color:#fff; }
+
+  .progress-block{ margin:22px 0 26px; }
+  .progress-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:8px;
+  }
+  .progress-pct{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-size:46px;
+    font-weight:700;
+    color:var(--pink-deep);
+    line-height:1;
+  }
+  .progress-frac{
+    font-size:11px;
+    color:var(--brown);
+    text-align:right;
+    line-height:1.5;
+    font-weight:500;
+  }
+  .bar-track{
+    height:12px;
+    background:var(--paper-2);
+    border:1.5px solid var(--brown);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    background:linear-gradient(90deg, var(--pink), var(--brown));
+    width:0%;
+    transition:width .35s ease;
+  }
+
+  .now-flag{
+    font-size:11px;
+    color:var(--pink-deep);
+    font-weight:600;
+    margin-top:8px;
+    letter-spacing:0.02em;
+  }
+
+  .list{ border-top:2px solid var(--brown); }
+  .row{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:13px 2px;
+    border-bottom:1px solid var(--line);
+    transition:background .2s ease;
+  }
+  .row.current{
+    background:var(--done-glow);
+    margin:0 -10px;
+    padding-left:12px;
+    padding-right:12px;
+    border-radius:8px;
+    border-bottom:1px solid transparent;
+    border-left:4px solid var(--pink);
+  }
+  .row .time{
+    flex:0 0 84px;
+    font-size:11px;
+    color:var(--gray);
+    padding-top:3px;
+    font-weight:600;
+    letter-spacing:0.01em;
+  }
+  .row.current .time{color:var(--pink-deep);}
+
+  .check{
+    flex:0 0 22px;
+    width:22px;height:22px;
+    border:2px solid var(--brown);
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-top:1px;
+    background:var(--paper);
+  }
+  .check.checked{
+    background:var(--pink);
+    border-color:var(--pink);
+  }
+  .check.checked::after{
+    content:'✓';
+    color:#fff;
+    font-size:13px;
+    font-weight:700;
+  }
+
+  .label-col{ flex:1; }
+  .label{
+    font-family:'Poppins', sans-serif;
+    font-size:16px;
+    font-weight:600;
+    padding-top:1px;
+    color:var(--ink);
+  }
+  .note{
+    font-size:11px;
+    color:var(--gray);
+    margin-top:3px;
+    line-height:1.4;
+    font-weight:400;
+  }
+  .row.done .label{
+    color:var(--gray);
+    text-decoration:line-through;
+    text-decoration-color:var(--gray);
+  }
+  .row.done .note{ opacity:0.6; }
+
+  .rest-row{
+    display:flex;
+    gap:14px;
+    padding:8px 2px;
+    font-size:11px;
+    color:var(--gray);
+    font-style:italic;
+    align-items:baseline;
+    letter-spacing:0.02em;
+  }
+  .rest-row .time{flex:0 0 84px; font-weight:600;}
+
+  footer{
+    margin-top:30px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .reset-note{
+    font-size:10px;
+    color:var(--gray);
+    letter-spacing:0.03em;
+  }
+  .reset-btn{
+    background:var(--paper);
+    border:1.5px solid var(--brown);
+    color:var(--brown-deep);
+    font-family:'Poppins', sans-serif;
+    font-weight:600;
+    font-size:10px;
+    padding:7px 12px;
+    border-radius:20px;
+    cursor:pointer;
+    letter-spacing:0.03em;
+  }
+  .reset-btn:hover{ background:var(--pink); border-color:var(--pink); color:#fff; }
+
+  .loading{
+    text-align:center;
+    color:var(--gray);
+    padding:60px 0;
+    font-size:12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="loading">loading today's page…</div>
+</div>
+
+<script>
+const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DAY_ABBR = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+// schedule[day] = list of blocks. type: 'task' (checkable) or 'rest' (display only)
+// note = the key reminder points for that block
+const SCHEDULE = {
+  Monday: [
+    {start:6*60, end:7*60, label:"🇬🇧 English", type:"task", note:"Writing · Vocabulary · Speaking · Academic/professional English"},
+    {start:7*60, end:9*60, label:"🧹 Chores + 🍳 Breakfast + prep", type:"task", note:"Morning reset — chores, breakfast, get ready for the day"},
+    {start:9*60, end:10*60, label:"Break / shop prep", type:"rest"},
+    {start:10*60, end:12*60, label:"🔐 IBM Cybersecurity", type:"task", note:"Modules · Labs · Projects · Notes → turn into portfolio (e.g. Linux security notes)"},
+    {start:12*60, end:13*60, label:"🍱 Lunch + break", type:"rest"},
+    {start:13*60, end:14.5*60, label:"📌 Tech Julie Pinterest", type:"task", note:"Main account · 4–7 pins/week · Affiliate products · Blog traffic · SEO keywords · Seasonal content"},
+    {start:14.5*60, end:15*60, label:"☕ Break", type:"rest"},
+    {start:15*60, end:16.5*60, label:"🎥 YouTube", type:"task", note:"Build the machine: research, scripting, editing, thumbnails, retention, analytics"},
+    {start:16.5*60, end:17*60, label:"🇫🇷 French", type:"task", note:"30 min French"},
+    {start:17*60, end:18.5*60, label:"✍️ Webnovel", type:"task", note:"Target 2,000–3,000 words/week overall, not huge counts"},
+    {start:18.5*60, end:24*60, label:"🌙 Rest", type:"rest"},
+  ],
+  Tuesday: [
+    {start:6*60, end:7*60, label:"🇬🇧 English", type:"task", note:"Writing · Vocabulary · Speaking · Academic/professional English"},
+    {start:7*60, end:9*60, label:"🧹 Chores + 🍳 Breakfast + prep", type:"task", note:"Morning reset — chores, breakfast, get ready for the day"},
+    {start:9*60, end:10*60, label:"Break / shop prep", type:"rest"},
+    {start:10*60, end:12*60, label:"🔐 IBM Cybersecurity", type:"task", note:"Modules · Labs · Projects · Notes → turn into portfolio (e.g. Linux security notes)"},
+    {start:12*60, end:13*60, label:"🍱 Lunch + break", type:"rest"},
+    {start:13*60, end:14.5*60, label:"💻 Tech Julie Website", type:"task", note:"Main business (~70% of site time) · SEO articles · Affiliate content · Email list · Monetization · 1–2 strong articles/week"},
+    {start:14.5*60, end:15*60, label:"☕ Break", type:"rest"},
+    {start:15*60, end:16.5*60, label:"📌 NotesInNebula Pinterest", type:"task", note:"Secondary/experimental · 3–5 pins/week · Test ideas · Repurpose content · Try new formats"},
+    {start:16.5*60, end:17*60, label:"🇨🇳 Chinese", type:"task", note:"30 min Chinese"},
+    {start:17*60, end:18.5*60, label:"📌 NotesInNebula Website", type:"task", note:"Secondary site (~30% of site time) · 1 article/week or less"},
+    {start:18.5*60, end:24*60, label:"🌙 Rest", type:"rest"},
+  ],
+  Wednesday: [
+    {start:6*60, end:7*60, label:"🇬🇧 English", type:"task", note:"Writing · Vocabulary · Speaking · Academic/professional English"},
+    {start:7*60, end:9*60, label:"🧹 Chores + 🍳 Breakfast + prep", type:"task", note:"Morning reset — chores, breakfast, get ready for the day"},
+    {start:9*60, end:10*60, label:"Break / shop prep", type:"rest"},
+    {start:10*60, end:12*60, label:"🔐 IBM Cybersecurity", type:"task", note:"Modules · Labs · Projects · Notes → turn into portfolio (e.g. Linux security notes)"},
+    {start:12*60, end:13*60, label:"🍱 Lunch + break", type:"rest"},
+    {start:13*60, end:14.5*60, label:"📌 NotesInNebula Pinterest", type:"task", note:"Secondary/experimental · 3–5 pins/week · Test ideas · Repurpose content · Try new formats"},
+    {start:14.5*60, end:15*60, label:"☕ Break", type:"rest"},
+    {start:15*60, end:16.5*60, label:"🎥 YouTube", type:"task", note:"Build the machine: research, scripting, editing, thumbnails, retention, analytics"},
+    {start:16.5*60, end:17*60, label:"🇫🇷 French", type:"task", note:"30 min French"},
+    {start:17*60, end:18.5*60, label:"✍️ Webnovel", type:"task", note:"Target 2,000–3,000 words/week overall, not huge counts"},
+    {start:18.5*60, end:24*60, label:"🌙 Rest", type:"rest"},
+  ],
+  Thursday: [
+    {start:6*60, end:7*60, label:"🇬🇧 English", type:"task", note:"Writing · Vocabulary · Speaking · Academic/professional English"},
+    {start:7*60, end:9*60, label:"🧹 Chores + 🍳 Breakfast + prep", type:"task", note:"Morning reset — chores, breakfast, get ready for the day"},
+    {start:9*60, end:10*60, label:"Break / shop prep", type:"rest"},
+    {start:10*60, end:12*60, label:"🔐 IBM Cybersecurity", type:"task", note:"Modules · Labs · Projects · Notes → turn into portfolio (e.g. Linux security notes)"},
+    {start:12*60, end:13*60, label:"🍱 Lunch + break", type:"rest"},
+    {start:13*60, end:14.5*60, label:"💻 Tech Julie Website", type:"task", note:"Main business (~70% of site time) · SEO articles · Affiliate content · Email list · Monetization · 1–2 strong articles/week"},
+    {start:14.5*60, end:15*60, label:"☕ Break", type:"rest"},
+    {start:15*60, end:16.5*60, label:"💻 Tech Julie Website", type:"task", note:"Continue this week's article/build work"},
+    {start:16.5*60, end:17*60, label:"🇨🇳 Chinese", type:"task", note:"30 min Chinese"},
+    {start:17*60, end:18.5*60, label:"📌 NotesInNebula Website", type:"task", note:"Secondary site (~30% of site time) · 1 article/week or less"},
+    {start:18.5*60, end:24*60, label:"🌙 Rest", type:"rest"},
+  ],
+  Friday: [
+    {start:6*60, end:7*60, label:"🇬🇧 English", type:"task", note:"Writing · Vocabulary · Speaking · Academic/professional English"},
+    {start:7*60, end:9*60, label:"🧹 Chores + 🍳 Breakfast + prep", type:"task", note:"Morning reset — chores, breakfast, get ready for the day"},
+    {start:9*60, end:10*60, label:"Break / shop prep", type:"rest"},
+    {start:10*60, end:12*60, label:"🔐 IBM Cybersecurity", type:"task", note:"Modules · Labs · Projects · Notes → turn into portfolio (e.g. Linux security notes)"},
+    {start:12*60, end:13*60, label:"🍱 Lunch + break", type:"rest"},
+    {start:13*60, end:14.5*60, label:"📌 Tech Julie Pinterest", type:"task", note:"Main account · 4–7 pins/week · Affiliate products · Blog traffic · SEO keywords · Seasonal content"},
+    {start:14.5*60, end:15*60, label:"☕ Break", type:"rest"},
+    {start:15*60, end:16.5*60, label:"🎥 YouTube", type:"task", note:"Build the machine: research, scripting, editing, thumbnails, retention, analytics"},
+    {start:16.5*60, end:17*60, label:"🇫🇷 French", type:"task", note:"30 min French"},
+    {start:17*60, end:18.5*60, label:"✍️ Webnovel", type:"task", note:"Target 2,000–3,000 words/week overall, not huge counts"},
+    {start:18.5*60, end:24*60, label:"🌙 Rest", type:"rest"},
+  ],
+  Saturday: [
+    {start:6*60, end:7*60, label:"🇬🇧 English", type:"task", note:"Writing · Vocabulary · Speaking · Academic/professional English"},
+    {start:7*60, end:9*60, label:"🧹 Chores + 🍳 Breakfast + prep", type:"task", note:"Morning reset — chores, breakfast, get ready for the day"},
+    {start:9*60, end:10*60, label:"Break / shop prep", type:"rest"},
+    {start:10*60, end:12*60, label:"🔐 IBM Cybersecurity", type:"task", note:"Modules · Labs · Projects · Notes → turn into portfolio (e.g. Linux security notes)"},
+    {start:12*60, end:13*60, label:"🍱 Lunch + break", type:"rest"},
+    {start:13*60, end:14.5*60, label:"🎥 YouTube", type:"task", note:"Topic research + idea list for next video"},
+    {start:14.5*60, end:15*60, label:"☕ Break", type:"rest"},
+    {start:15*60, end:16.5*60, label:"🎥 YouTube", type:"task", note:"Write the script for this week's video"},
+    {start:16.5*60, end:17*60, label:"🇨🇳 Chinese / review", type:"task", note:"30 min Chinese or review"},
+    {start:17*60, end:18.5*60, label:"🎥 YouTube", type:"task", note:"Finish edit, design thumbnail, write title"},
+    {start:18.5*60, end:24*60, label:"🌙 Rest", type:"rest"},
+  ],
+  Sunday: [
+    {start:6*60, end:7*60, label:"🌿 Light English", type:"task", note:"Light review — no need for a full session"},
+    {start:7*60, end:9*60, label:"🧹 Chores + 🍳 Breakfast", type:"task", note:"Morning reset — chores, breakfast"},
+    {start:10*60, end:12*60, label:"🔐 Review", type:"task", note:"Review the week's IBM material"},
+    {start:13*60, end:14.5*60, label:"📋 Weekly planning", type:"task", note:"Plan next week across all projects"},
+    {start:16.5*60, end:17*60, label:"🌿 Language review", type:"task", note:"Light review of French/Chinese vocab"},
+    {start:17*60, end:18.5*60, label:"✍️ Webnovel", type:"task", note:"Target 2,000–3,000 words/week overall, not huge counts"},
+    {start:18.5*60, end:24*60, label:"🌙 Rest", type:"rest"},
+  ],
+};
+
+function fmtTime(mins){
+  let h = Math.floor(mins/60);
+  const m = Math.round(mins%60);
+  const ap = h>=12 ? 'pm':'am';
+  h = h%12; if(h===0) h=12;
+  return m===0 ? `${h}${ap}` : `${h}:${String(m).padStart(2,'0')}${ap}`;
+}
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function dateKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+
+const now = new Date();
+const todayKey = dateKey(now);
+const todayName = DAYS[now.getDay()];
+let selectedDay = todayName;
+let checkedSet = new Set();
+let storageOk = true;
+
+const app = document.getElementById('app');
+
+async function loadProgress(dayName){
+  const key = dayName === todayName ? todayKey : null;
+  if(!key){ return new Set(); }
+  try{
+    const raw = localStorage.getItem(`progress:${key}`);
+    if(raw){ return new Set(JSON.parse(raw)); }
+  }catch(e){ storageOk = false; }
+  return new Set();
+}
+
+async function saveProgress(){
+  try{
+    localStorage.setItem(`progress:${todayKey}`, JSON.stringify([...checkedSet]));
+  }catch(e){ storageOk = false; }
+}
+
+function currentBlockIndex(dayName){
+  if(dayName !== todayName) return -1;
+  const mins = now.getHours()*60 + now.getMinutes();
+  const blocks = SCHEDULE[dayName];
+  for(let i=0;i<blocks.length;i++){
+    if(mins >= blocks[i].start && mins < blocks[i].end) return i;
+  }
+  return -1;
+}
+
+function render(){
+  const blocks = SCHEDULE[selectedDay];
+  const taskBlocks = blocks.filter(b=>b.type==='task');
+  const isToday = selectedDay === todayName;
+  const doneCount = isToday ? [...checkedSet].filter(i=>blocks[i] && blocks[i].type==='task').length : 0;
+  const pct = taskBlocks.length ? Math.round((doneCount/taskBlocks.length)*100) : 0;
+  const curIdx = currentBlockIndex(selectedDay);
+
+  const dayPicker = DAYS.map((d,i)=>{
+    const abbr = DAY_ABBR[i];
+    const active = d===selectedDay ? 'active' : '';
+    const marker = d===todayName ? 'today-marker' : '';
+    return `<button class="${active} ${marker}" data-day="${d}">${abbr}</button>`;
+  }).join('');
+
+  let rowsHtml = '';
+  blocks.forEach((b, idx)=>{
+    const timeStr = `${fmtTime(b.start)}–${fmtTime(b.end)}`;
+    const isCurrent = idx === curIdx;
+    if(b.type === 'rest'){
+      rowsHtml += `<div class="rest-row ${isCurrent?'current':''}"><span class="time">${timeStr}</span><span>${b.label}</span></div>`;
+    } else {
+      const checked = isToday && checkedSet.has(idx);
+      rowsHtml += `
+        <div class="row ${checked?'done':''} ${isCurrent?'current':''}">
+          <span class="time">${timeStr}</span>
+          <div class="check ${checked?'checked':''}" data-idx="${idx}" role="checkbox" aria-checked="${checked}"></div>
+          <div class="label-col">
+            <div class="label">${b.label}</div>
+            ${b.note ? `<div class="note">${b.note}</div>` : ''}
+          </div>
+        </div>`;
+    }
+  });
+
+  const nowFlag = (isToday && curIdx>=0)
+    ? `<div class="now-flag">right now → ${blocks[curIdx].label}</div>`
+    : (isToday ? `<div class="now-flag">outside scheduled blocks</div>` : '');
+
+  const dateLine = isToday
+    ? `${todayName}, ${now.toLocaleDateString(undefined,{month:'long', day:'numeric'})} — today`
+    : `${selectedDay} — preview (not checkable until it's today)`;
+
+  app.innerHTML = `
+    <header>
+      <div>
+        <h1>Ledger</h1>
+        <div class="date-line">${dateLine}</div>
+      </div>
+      <div class="daypick">${dayPicker}</div>
+    </header>
+
+    <div class="progress-block">
+      <div class="progress-top">
+        <div class="progress-pct">${isToday ? pct : '–'}%</div>
+        <div class="progress-frac">${isToday ? `${doneCount} / ${taskBlocks.length} blocks<br>done today` : `${taskBlocks.length} blocks<br>scheduled`}</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${isToday?pct:0}%"></div></div>
+      ${nowFlag}
+    </div>
+
+    <div class="list">${rowsHtml}</div>
+
+    <footer>
+      <div class="reset-note">${storageOk ? 'progress saved · clears fresh each new day' : 'storage unavailable this session'}</div>
+      ${isToday ? `<button class="reset-btn" id="resetBtn">clear today</button>` : ''}
+    </footer>
+  `;
+
+  document.querySelectorAll('.daypick button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ selectedDay = btn.dataset.day; render(); });
+  });
+
+  if(isToday){
+    document.querySelectorAll('.check').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const idx = parseInt(el.dataset.idx,10);
+        if(checkedSet.has(idx)) checkedSet.delete(idx); else checkedSet.add(idx);
+        saveProgress();
+        render();
+      });
+    });
+    const resetBtn = document.getElementById('resetBtn');
+    if(resetBtn){
+      resetBtn.addEventListener('click', ()=>{
+        checkedSet = new Set();
+        saveProgress();
+        render();
+      });
+    }
+  }
+}
+
+(async function init(){
+  checkedSet = await loadProgress(todayName);
+  render();
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
